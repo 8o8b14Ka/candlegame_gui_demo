@@ -1,0 +1,23 @@
+# exclude everything except gitignore
+*.*
+!.gitignore
+
+# include files of certain extensions back
+!*.rpy
+
+!*.png
+!*.jpg
+
+!*.webm
+
+!*.mp3
+!*.ogg
+
+!*.ttf
+
+!*.ico
+!*.md
+
+# exclude pers. data
+persistent
+.idea
