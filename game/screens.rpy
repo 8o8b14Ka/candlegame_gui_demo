@@ -382,7 +382,7 @@ screen main_menu:
 #        textbutton _("Справка") action Help()
 #        textbutton _("Выход") action Quit(confirm=False)
 
-    # add TrackCursor('cursor','cursors/fired_shadow.png')
+    add TrackCursor('cursor','cursors/fired_shadow.png')
 
 init -2 python:
 
