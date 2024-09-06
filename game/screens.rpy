@@ -600,7 +600,10 @@ init -1 python:
 
     strp = {}
 
-    #strb = {}
+    if not persistent.strb:
+        persistent.strb = {}
+        for i in range (10,50):
+            persistent.strb[i] = True
     fscr = _preferences.fullscreen
     for xx in range (0,10):
         for yy in range (1,5):
