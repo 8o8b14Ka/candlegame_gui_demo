@@ -7,12 +7,12 @@ init -1 python:
     cur_x = 0
     cur_y = 0
     cursor = "just loaded"
-    def currial():
+    def get_cur_pos():
         global cur_x, cur_y
         cur_x, cur_y = renpy.get_mouse_pos()
 
 screen cursor:
-    timer 0.1 repeat True action [currial(),SetVariable("cursor" ,"%i"%cur_x+" : "+ "%i"%cur_y)]
+    timer 0.1 repeat True action [get_cur_pos(),SetVariable("cursor" ,"%i"%cur_x+" : "+ "%i"%cur_y)]
     text cursor
 
 image ic_load = "interface/icons/load.png"
@@ -296,9 +296,9 @@ init python:
                 t = Transform(child=self.child2, alpha=self.o)
                 cr = renpy.render(t, width, height, st, at)
                 rv.blit(cr, (self.xx - cw / 2, self.yy - ch / 2))
-
-    #            cr = renpy.render(self.child, width, height, st, at)
-    #            rv.blit(cr, (self.x - cw / 2, self.y - ch / 2))
+                if renpy.emscripten:
+                    cr = renpy.render(self.child, width, height, st, at)
+                    rv.blit(cr, (self.x - cw / 2, self.y - ch / 2))
 
             return rv
 
@@ -469,8 +469,8 @@ screen file_picker:
     add "save_load"
     timer .00001 action SetVariable("fp_timer",False)
     timer 1 action SetVariable("fp_timer",True)
-    timer .1 repeat True action If(load_c<>0,true=[SetVariable("load_c",0),FileLoad(load_c)],false=NullAction())
-    timer .1 repeat True action If(save_c<>0,true=[SetVariable("save_c",0),FileSave(save_c)],false=NullAction())
+    timer 0.1 repeat True action If(load_c<>0,true=[SetVariable("load_c",0),FileLoad(load_c)],false=NullAction())
+    timer 0.1 repeat True action If(save_c<>0,true=[SetVariable("save_c",0),FileSave(save_c)],false=NullAction())
     if fp_timer:
         #(515,140),(815,340),(1120,500), 720
         imagebutton idle im.Sepia(fs(1)) hover fs(1) pos (515,140) action SetVariable("save_c",1) alternate SetVariable("load_c",1) 
@@ -630,43 +630,116 @@ image fires =             Animation("interface/fire1.png", 0.25,
                                                   "interface/fire2.png", 0.25,
                                                   "interface/fire3.png", 0.25,
                                                   "interface/fire2.png", 0.25)      
-image fire0 = "interface/fire0.png"
-image fire0h = "interface/fire0h.png"
+
+image fire0 = Solid('#00000001',xysize=(80,78))
+
+image fire0h = Solid('#00ff0011',xysize=(80,78))#"interface/fire0.png"
 
 image on_off:
     "interface/icons/on_off.png"
     align (1.0,0.0)
     
+init python:
+    def pref_timers_update(st,at):
+       preferences.set_mixer("sfx",sum((persistent.strb[i] for i in range(10,20)))/10)
+       preferences.set_mixer("music",sum((persistent.strb[i] for i in range(20,30)))/10)
+       preferences.set_mixer("voice",sum((persistent.strb[i] for i in range(30,40)))/10)
+       preferences.text_cps = (sum((persistent.strb[i] for i in range(40,50)))*20)
+       return Null(),.1#Text('%s,%s,%s'%(str(lclick),str(mclick),str(rclick))), .1
+
+    def pref_func_hovered(candle):
+        global persistent
+        if lclick and not persistent.strb[candle]:
+            persistent.strb[candle] = True
+            play_sound("sfx/fire_bring.ogg")
+            #Play("sound","sfx/fire_bring.ogg")()
+        elif rclick and persistent.strb[candle]:
+            persistent.strb[candle] = False
+            #Play("sound","sfx/fire_calm.ogg")()
+            play_sound("sfx/fire_calm.ogg")
+
+    def pref_func_action(candle):
+        global persistent
+        if not persistent.strb[candle]:
+            persistent.strb[candle] = True
+            play_sound("sfx/fire_bring.ogg")
+            #Play("sound","sfx/fire_bring.ogg")()
+
+    def pref_func_alternate(candle):
+        global persistent
+        if persistent.strb[candle]:
+            persistent.strb[candle] = False
+            play_sound("sfx/fire_calm.ogg")
+#             Play("sound","sfx/fire_calm.ogg")()
+
+
+# Multi-Channel Sound Module for Ren'Py
+    import renpy.audio.audio as audio
+    from collections import deque
+
+    class MultiChannelSound(object):
+        def __init__(self, num_channels=8):
+            self.num_channels = num_channels
+            self.channels = deque(maxlen=num_channels)
+            for i in range(num_channels):
+                channel_name = f"multi_sound_{i}"
+                renpy.music.register_channel(channel_name, "sfx", loop=False)
+                self.channels.append(channel_name)
+
+        def play(self, filename, loop=False, volume=1.0):
+            channel = self.channels[0]
+            self.channels.rotate(-1)
+            renpy.music.play(filename, channel=channel, loop=loop, relative_volume=volume)
+
+        def stop_all(self):
+            for channel in self.channels:
+                renpy.music.stop(channel=channel)
+
+    # Initialize the multi-channel sound system
+    multi_sound = MultiChannelSound()
+
+    def play_sound(filename, loop=False, volume=1.0):
+        multi_sound.play(filename, loop=loop, volume=volume)
+
+    def stop_all_sounds():
+        multi_sound.stop_all()
+
+
+
+image pref_timers = DynamicDisplayable(pref_timers_update)
+        
+    
 screen preferences:
-
     tag menu
-
     # Включить навигацию.
     add "options"
     add "on_off"
+    add 'pref_timers'
     add GetMouse()
-    imagebutton idle "fire0" hover "fire0"  pos (1040,320) anchor (0.5,1.0) action If(not fscr, true=[SetVariable("fscr",True),Preference("display", "fullscreen"), Play("sound","sfx/fire_bring.ogg")], false=NullAction()) alternate If(fscr,true=[SetVariable("fscr",False),Preference("display","window"),Play("sound","sfx/fire_calm.ogg")])    
+    imagebutton idle "fire0" hover "fire0h"  pos (1040,320) anchor (0.5,1.0) action If(not fscr, true=[SetVariable("fscr",True),Preference("display", "fullscreen"), Play("sound","sfx/fire_bring.ogg")], false=NullAction()) alternate If(fscr,true=[SetVariable("fscr",False),Preference("display","window"),Play("sound","sfx/fire_calm.ogg")])
     if fscr:
         add "fires" pos (1040,320) anchor (0.5,0.8)
     
     for xx in range (0,10):
         for yy in range (1,5):
-           if persistent.strb[yy*10+xx]:
-               add "fires" pos strp[(xx,yy)] anchor (0.5,0.8)
+            $candle = yy*10+xx
+            if persistent.strb[candle]:
+                add "fires" pos strp[(xx,yy)] anchor (0.5,0.8)
+            imagebutton:
+                idle "fire0"
+                pos strp[(xx,yy)]
+                anchor (0.5,0.8)
+                #hover_sound 'sfx/fire_bring.ogg'
 
-           imagebutton idle "fire0" hover "fire0"  pos strp[(xx,yy)] anchor (0.5,1.0) hovered [If(lclick and not persistent.strb[yy*10+xx],true=[SetDict(persistent.strb,yy*10+xx,True),Play("sound","sfx/fire_bring.ogg")]),If(rclick and persistent.strb[yy*10+xx],true=[SetDict(persistent.strb,yy*10+xx,False),Play("sound","sfx/fire_calm.ogg")])] action If(not persistent.strb[yy*10+xx],true=[SetDict(persistent.strb,yy*10+xx,True),Play("sound","sfx/fire_bring.ogg")],false=NullAction()) alternate If(persistent.strb[yy*10+xx],true=[SetDict(persistent.strb,yy*10+xx,False),Play("sound","sfx/fire_calm.ogg")])
-           
-
-          # timer 0.1 repeat True action SetVariable("string",str(lclick)+str(mclick)+str(rclick)+str(int(persistent.strb[20])+int(persistent.strb[21])+int(persistent.strb[22])+int(persistent.strb[23])+int(persistent.strb[24])+int(persistent.strb[25])+int(persistent.strb[26])+int(persistent.strb[27])+int(persistent.strb[28])+int(persistent.strb[29]) ))
-           timer 0.1 repeat True action Preference("music volume",(persistent.strb[20]+persistent.strb[21]+persistent.strb[22]+persistent.strb[23]+persistent.strb[24]+persistent.strb[25]+persistent.strb[26]+persistent.strb[27]+persistent.strb[28]+persistent.strb[29]-0.0)/10)
-           timer 0.1 repeat True action Preference("sound volume",(persistent.strb[10]+persistent.strb[11]+persistent.strb[12]+persistent.strb[13]+persistent.strb[14]+persistent.strb[15]+persistent.strb[16]+persistent.strb[17]+persistent.strb[18]+persistent.strb[19]-0.0)/10)
-
-           timer 0.1 repeat True action Preference("voice volume",(persistent.strb[30]+persistent.strb[31]+persistent.strb[32]+persistent.strb[33]+persistent.strb[34]+persistent.strb[35]+persistent.strb[36]+persistent.strb[37]+persistent.strb[38]+persistent.strb[39]-0.0)/10)
-
-           timer 0.1 repeat True action Preference("text speed",(persistent.strb[40]+persistent.strb[41]+persistent.strb[42]+persistent.strb[43]+persistent.strb[44]+persistent.strb[45]+persistent.strb[46]+persistent.strb[47]+persistent.strb[48]+persistent.strb[49])*20)
+                hovered Function(pref_func_hovered,candle)
+                action Function(pref_func_action,candle)
+                alternate Function(pref_func_alternate,candle)
 
 
-           text string
+
+
+
+            text string
     imagebutton focus_mask True idle "ic_return" hover "ic_return_hov" align (.03,.2) action Return()
     imagebutton focus_mask True idle "ic_save" hover "ic_save_hov" align (.03,.5) action ShowMenu("save")
     imagebutton focus_mask True idle "ic_mainmenu" hover "ic_mainmenu_hov" align (.03,.8) action MainMenu()

@@ -791,6 +791,9 @@ screen choisse:
             if lp_chimera == 3:
                 imagebutton idle "chimera_idle" hover "chimera_hov_2" focus_mask True yalign 1.0 hovered Play("sound","sfx/hover.ogg") unhovered Play("sound","sfx/unhover.ogg") action [Play("sound","sfx/action.ogg"),  Return('c3')]
     add "black_unfade"
+    if renpy.emscripten:
+        add TrackCursor('cursor','cursors/fired_shadow.png')
+
 
 
 
