@@ -473,22 +473,34 @@ screen file_picker:
     timer 0.1 repeat True action If(save_c<>0,true=[SetVariable("save_c",0),FileSave(save_c)],false=NullAction())
     if fp_timer:
         #(515,140),(815,340),(1120,500), 720
-        imagebutton idle im.Sepia(fs(1)) hover fs(1) pos (515,140) action SetVariable("save_c",1) alternate SetVariable("load_c",1) 
-        imagebutton idle im.Sepia(fs(2)) hover fs(2) pos (815,140) action SetVariable("save_c",2) alternate SetVariable("load_c",2) 
-        imagebutton idle im.Sepia(fs(3)) hover fs(3) pos (1120,140) action SetVariable("save_c",3) alternate SetVariable("load_c",3) 
-        imagebutton idle im.Sepia(fs(4)) hover fs(4) pos (515,340) action SetVariable("save_c",4) alternate SetVariable("load_c",4) 
-        imagebutton idle im.Sepia(fs(5)) hover fs(5) pos (815,340) action SetVariable("save_c",5) alternate SetVariable("load_c",5) 
-        imagebutton idle im.Sepia(fs(6)) hover fs(6) pos (1120,340) action SetVariable("save_c",6) alternate SetVariable("load_c",6) 
-        imagebutton idle im.Sepia(fs(7)) hover fs(7) pos (515,500) action SetVariable("save_c",7) alternate SetVariable("load_c",7) 
-        imagebutton idle im.Sepia(fs(8)) hover fs(8) pos (815,500) action SetVariable("save_c",8) alternate SetVariable("load_c",8) 
-        imagebutton idle im.Sepia(fs(9)) hover fs(9) pos (1120,500) action SetVariable("save_c",9) alternate SetVariable("load_c",9) 
-        imagebutton idle im.Sepia(fs(10)) hover fs(10) pos (515,720) action SetVariable("save_c",10) alternate SetVariable("load_c",10) 
-        imagebutton idle im.Sepia(fs(11)) hover fs(11) pos (815,720) action SetVariable("save_c",11) alternate SetVariable("load_c",11) 
-        imagebutton idle im.Sepia(fs(12)) hover fs(12) pos (1120,720) action SetVariable("save_c",12) alternate SetVariable("load_c",12) 
+        for i in range (12):
+            $j=i+1
+            imagebutton:
+                idle im.Sepia(fs(j))
+                hover fs(j)
+                xpos 515+300*(i%3)
+                ypos 140+200*(i//3)
+                action SetVariable("save_c",j)
+                alternate SetVariable("load_c",j)
+
+#         imagebutton idle im.Sepia(fs(1)) hover fs(1) pos (515,140) action SetVariable("save_c",1) alternate SetVariable("load_c",1)
+#         imagebutton idle im.Sepia(fs(2)) hover fs(2) pos (815,140) action SetVariable("save_c",2) alternate SetVariable("load_c",2)
+#         imagebutton idle im.Sepia(fs(3)) hover fs(3) pos (1120,140) action SetVariable("save_c",3) alternate SetVariable("load_c",3)
+#         imagebutton idle im.Sepia(fs(4)) hover fs(4) pos (515,340) action SetVariable("save_c",4) alternate SetVariable("load_c",4)
+#         imagebutton idle im.Sepia(fs(5)) hover fs(5) pos (815,340) action SetVariable("save_c",5) alternate SetVariable("load_c",5)
+#         imagebutton idle im.Sepia(fs(6)) hover fs(6) pos (1120,340) action SetVariable("save_c",6) alternate SetVariable("load_c",6)
+#         imagebutton idle im.Sepia(fs(7)) hover fs(7) pos (515,500) action SetVariable("save_c",7) alternate SetVariable("load_c",7)
+#         imagebutton idle im.Sepia(fs(8)) hover fs(8) pos (815,500) action SetVariable("save_c",8) alternate SetVariable("load_c",8)
+#         imagebutton idle im.Sepia(fs(9)) hover fs(9) pos (1120,500) action SetVariable("save_c",9) alternate SetVariable("load_c",9)
+#         imagebutton idle im.Sepia(fs(10)) hover fs(10) pos (515,720) action SetVariable("save_c",10) alternate SetVariable("load_c",10)
+#         imagebutton idle im.Sepia(fs(11)) hover fs(11) pos (815,720) action SetVariable("save_c",11) alternate SetVariable("load_c",11)
+#         imagebutton idle im.Sepia(fs(12)) hover fs(12) pos (1120,720) action SetVariable("save_c",12) alternate SetVariable("load_c",12)
 
     imagebutton focus_mask True idle "ic_return" hover "ic_return_hov" align (.03,.2) action Return()
     imagebutton focus_mask True idle "ic_options" hover "ic_options_hov" align (.03,.5) action ShowMenu("preferences")
     imagebutton focus_mask True idle "ic_mainmenu" hover "ic_mainmenu_hov" align (.03,.8) action MainMenu()
+    if renpy.emscripten:
+        add TrackCursor('cursor','cursors/fired_shadow.png')
 
 
 #_##_#frame:
@@ -743,8 +755,8 @@ screen preferences:
     imagebutton focus_mask True idle "ic_return" hover "ic_return_hov" align (.03,.2) action Return()
     imagebutton focus_mask True idle "ic_save" hover "ic_save_hov" align (.03,.5) action ShowMenu("save")
     imagebutton focus_mask True idle "ic_mainmenu" hover "ic_mainmenu_hov" align (.03,.8) action MainMenu()
-        
-#    use navigation
+    if renpy.emscripten:
+        add TrackCursor('cursor','cursors/fired_shadow.png')
 
 init -2 python:
     style.pref_frame.xfill = True
